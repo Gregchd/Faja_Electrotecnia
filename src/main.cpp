@@ -6,11 +6,17 @@ const int in1Pin = 12;  // Pin para AIN1 o BIN1
 const int in2Pin = 14;  // Pin para AIN2 o BIN2
 const int stbyPin = 27; // Pin para STBY (Standby)
 
+const int trigPin = 0; // Pin para el sensor de ultrasonido (TRIG)
+const int echoPin = 4; // Pin para el sensor de ultrasonido (ECHO)
+
 // Configuración PWM
 const int pwmChannel = 0;     // Canal PWM
 const int freq = 5000;        // Frecuencia en Hz
 const int resolution = 8;     // Resolución de 8 bits (0-255)
 const int maxDutyCycle = 255; // Máximo ciclo de trabajo (velocidad máxima)
+
+const float SOUND_SPEED = 34300; // Velocidad del sonido en cm/s
+const int MAX_DISTANCE = 400;    // Máxima distancia que se puede medir en cm
 
 // Función para controlar el motor
 void setMotor(bool forward, int speed)
@@ -38,6 +44,11 @@ void setup()
   pinMode(in2Pin, OUTPUT);
   pinMode(stbyPin, OUTPUT);
 
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
+
+  Serial.begin(115200);
+
   // Configuración del PWM
   ledcSetup(pwmChannel, freq, resolution);
   ledcAttachPin(pwmPin, pwmChannel);
@@ -51,9 +62,33 @@ void setup()
 
 void loop()
 {
-  // Ejemplo: Cambiar dirección y velocidad
-  setMotor(false, maxDutyCycle); // Dirección hacia atrás, velocidad media
-  delay(3000);
-  setMotor(true, maxDutyCycle); // Dirección hacia adelante, máxima velocidad
-  delay(3000);
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+
+  // Medir el tiempo de rebote (en microsegundos)
+  long duration = pulseIn(echoPin, HIGH, MAX_DISTANCE * 58);
+
+  // Calcular la distancia en cm
+  float distance = duration * 0.034 / 2;
+
+  // Mostrar el resultado
+  if (distance >= MAX_DISTANCE || distance <= 0)
+  {
+    Serial.println("Fuera de rango");
+  }
+  else
+  {
+    Serial.print("Distancia: ");
+    Serial.print(distance);
+    Serial.println(" cm");
+  }
+
+  // Esperar antes de la siguiente medición
+  delay(500);
+
+  /* setMotor(true, maxDutyCycle); // Dirección hacia adelante, máxima velocidad
+  delay(3000); */
 }
