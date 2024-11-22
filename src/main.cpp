@@ -6,10 +6,15 @@ const int in1Pin = 12;  // Pin para AIN1 o BIN1
 const int in2Pin = 14;  // Pin para AIN2 o BIN2
 const int stbyPin = 27; // Pin para STBY (Standby)
 
-const int trigPin = 0; // Pin para el sensor de ultrasonido (TRIG)
-const int echoPin = 4; // Pin para el sensor de ultrasonido (ECHO)
+// Pines del sensor de ultrasonido 1
+const int trigPin1 = 0; // Pin para el sensor de ultrasonido (TRIG)
+const int echoPin1 = 4; // Pin para el sensor de ultrasonido (ECHO)
 
-// Configuración PWM
+// Pines del sensor de ultrasonido 2
+const int trigPin2 = 2;  // Pin para el sensor de ultrasonido (TRIG)
+const int echoPin2 = 15; // Pin para el sensor de ultrasonido (ECHO)
+
+// Configuración PWM para TB6612
 const int pwmChannel = 0;     // Canal PWM
 const int freq = 5000;        // Frecuencia en Hz
 const int resolution = 8;     // Resolución de 8 bits (0-255)
@@ -37,6 +42,22 @@ void setMotor(bool forward, int speed)
   ledcWrite(pwmChannel, speed);
 }
 
+// Función para leer distancia del sensor ultrasónico
+float getDistance(int trigPin, int echoPin)
+{
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+
+  long duration = pulseIn(echoPin, HIGH, MAX_DISTANCE * 58);
+  if (duration == 0) // No hay eco detectado
+    return MAX_DISTANCE + 1;
+
+  return (duration * 0.034 / 2); // Distancia en cm
+}
+
 void setup()
 {
   // Configurar los pines digitales
@@ -44,8 +65,10 @@ void setup()
   pinMode(in2Pin, OUTPUT);
   pinMode(stbyPin, OUTPUT);
 
-  pinMode(trigPin, OUTPUT);
-  pinMode(echoPin, INPUT);
+  pinMode(trigPin1, OUTPUT);
+  pinMode(echoPin1, INPUT);
+  pinMode(trigPin2, OUTPUT);
+  pinMode(echoPin2, INPUT);
 
   Serial.begin(115200);
 
@@ -56,39 +79,44 @@ void setup()
   // Activar el controlador
   digitalWrite(stbyPin, HIGH);
 
-  // Configurar la dirección y velocidad inicial
-  setMotor(true, maxDutyCycle); // Dirección hacia adelante, máxima velocidad
+  // Apagar el motor al inicio
+  setMotor(true, 0);
 }
 
 void loop()
 {
-  digitalWrite(trigPin, LOW);
-  delayMicroseconds(2);
-  digitalWrite(trigPin, HIGH);
-  delayMicroseconds(10);
-  digitalWrite(trigPin, LOW);
-
-  // Medir el tiempo de rebote (en microsegundos)
-  long duration = pulseIn(echoPin, HIGH, MAX_DISTANCE * 58);
-
-  // Calcular la distancia en cm
-  float distance = duration * 0.034 / 2;
-
-  // Mostrar el resultado
-  if (distance >= MAX_DISTANCE || distance <= 0)
+  // Sensor 1: Esperar detección para encender el motor
+  Serial.println("Esperando detección en Sensor 1...");
+  while (true)
   {
-    Serial.println("Fuera de rango");
-  }
-  else
-  {
-    Serial.print("Distancia: ");
-    Serial.print(distance);
-    Serial.println(" cm");
+    float distance1 = getDistance(trigPin1, echoPin1);
+    if (distance1 <= 6) // Activar motor si la distancia es menor a 6 cm
+    {
+      Serial.println("Objeto detectado en Sensor 1. Activando motor...");
+      setMotor(true, maxDutyCycle); // Motor adelante a máxima velocidad
+      break;
+    }
+    delay(100);
   }
 
-  // Esperar antes de la siguiente medición
-  delay(500);
+  // Sensor 2: Esperar detección para apagar el motor
+  Serial.println("Esperando detección en Sensor 2...");
+  while (true)
+  {
+    float distance2 = getDistance(trigPin2, echoPin2);
+    if (distance2 <= 6) // Detener motor si la distancia es menor a 6 cm
+    {
+      Serial.println("Objeto detectado en Sensor 2. Deteniendo motor...");
+      setMotor(true, 0); // Apagar el motor
+      break;
+    }
 
-  /* setMotor(true, maxDutyCycle); // Dirección hacia adelante, máxima velocidad
-  delay(3000); */
+    if (distance2 > MAX_DISTANCE) // Evitar quedarse atrapado en "fuera de rango"
+    {
+      Serial.println("Sensor 2 fuera de rango. Continuando...");
+    }
+    delay(100);
+  }
+
+  delay(500); // Pausa antes de reiniciar el ciclo
 }
