@@ -16,12 +16,17 @@ const int echoPin2 = 15; // Pin para el sensor de ultrasonido (ECHO)
 
 // Configuración PWM para TB6612
 const int pwmChannel = 0;     // Canal PWM
+const int pwmChannelBomba = 1; // Canal PWM
 const int freq = 5000;        // Frecuencia en Hz
 const int resolution = 8;     // Resolución de 8 bits (0-255)
 const int maxDutyCycle = 255; // Máximo ciclo de trabajo (velocidad máxima)
 
 const float SOUND_SPEED = 34300; // Velocidad del sonido en cm/s
 const int MAX_DISTANCE = 400;    // Máxima distancia que se puede medir en cm
+
+const int pwmPinBomba = 5;  // Pin para PWMA o PWMB
+const int in1PinBomba = 18; // Pin para AIN1 o BIN1
+const int in2PinBomba = 19; // Pin para AIN2 o BIN2 */
 
 // Función para controlar el motor
 void setMotor(bool forward, int speed)
@@ -40,6 +45,21 @@ void setMotor(bool forward, int speed)
 
   // Configurar velocidad (PWM)
   ledcWrite(pwmChannel, speed);
+}
+
+void setBomba(bool forward2, int speed2)
+{
+  if (forward2)
+  {
+    digitalWrite(in1PinBomba, HIGH);
+    digitalWrite(in2PinBomba, LOW);
+  }
+  else
+  {
+    digitalWrite(in1PinBomba, LOW);
+    digitalWrite(in2PinBomba, HIGH);
+  }
+  ledcWrite(pwmChannelBomba, speed2);
 }
 
 // Función para leer distancia del sensor ultrasónico
@@ -65,6 +85,9 @@ void setup()
   pinMode(in2Pin, OUTPUT);
   pinMode(stbyPin, OUTPUT);
 
+  pinMode(in1PinBomba, OUTPUT);
+  pinMode(in2PinBomba, OUTPUT);
+
   pinMode(trigPin1, OUTPUT);
   pinMode(echoPin1, INPUT);
   pinMode(trigPin2, OUTPUT);
@@ -75,6 +98,7 @@ void setup()
   // Configuración del PWM
   ledcSetup(pwmChannel, freq, resolution);
   ledcAttachPin(pwmPin, pwmChannel);
+  ledcAttachPin(pwmPinBomba, pwmChannelBomba);
 
   // Activar el controlador
   digitalWrite(stbyPin, HIGH);
@@ -93,7 +117,7 @@ void loop()
     if (distance1 <= 6) // Activar motor si la distancia es menor a 6 cm
     {
       Serial.println("Objeto detectado en Sensor 1. Activando motor...");
-      setMotor(true, maxDutyCycle); // Motor adelante a máxima velocidad
+      setMotor(true, 100); // Motor adelante a máxima velocidad
       break;
     }
     delay(100);
@@ -118,5 +142,8 @@ void loop()
     delay(100);
   }
 
+  setBomba(true, 100);
+  delay(5000); // Pausa antes de reiniciar el ciclo
+  setBomba(true, 0);
   delay(500); // Pausa antes de reiniciar el ciclo
 }
