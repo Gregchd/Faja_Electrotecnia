@@ -14,6 +14,10 @@ const int echoPin1 = 4; // Pin para el sensor de ultrasonido (ECHO)
 const int trigPin2 = 2;  // Pin para el sensor de ultrasonido (TRIG)
 const int echoPin2 = 15; // Pin para el sensor de ultrasonido (ECHO)
 
+// Pines del sensor de ultrasonido 2=3
+const int trigPin3 = 16;  // Pin para el sensor de ultrasonido (TRIG)
+const int echoPin3 = 17; // Pin para el sensor de ultrasonido (ECHO)
+
 // Configuración PWM para TB6612
 const int pwmChannel = 0;     // Canal PWM
 const int pwmChannelBomba = 1; // Canal PWM
@@ -92,6 +96,8 @@ void setup()
   pinMode(echoPin1, INPUT);
   pinMode(trigPin2, OUTPUT);
   pinMode(echoPin2, INPUT);
+  pinMode(trigPin3, OUTPUT);
+  pinMode(echoPin3, INPUT);
 
   Serial.begin(115200);
 
@@ -146,4 +152,24 @@ void loop()
   delay(5000); // Pausa antes de reiniciar el ciclo
   setBomba(true, 0);
   delay(500); // Pausa antes de reiniciar el ciclo
+
+  setMotor(true, 100);
+  delay(500);
+
+  while (true)
+  {
+    float distance3 = getDistance(trigPin3, echoPin3);
+    if (distance3 <= 6) // Detener motor si la distancia es menor a 6 cm
+    {
+      Serial.println("Objeto detectado en Sensor 3. Deteniendo motor...");
+      setMotor(true, 0); // Apagar el motor
+      break;
+    }
+
+    if (distance3 > MAX_DISTANCE) // Evitar quedarse atrapado en "fuera de rango"
+    {
+      Serial.println("Sensor 3 fuera de rango. Continuando...");
+    }
+    delay(100);
+  }
 }
