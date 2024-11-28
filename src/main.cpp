@@ -1,7 +1,7 @@
 #include <Arduino.h>
 
 // Pines del TB6612
-const int pwmPin = 26;  // Pin para PWMA o PWMB
+const int pwmPin = 25;  // Pin para PWMA o PWMB
 const int in1Pin = 12;  // Pin para AIN1 o BIN1
 const int in2Pin = 14;  // Pin para AIN2 o BIN2
 const int stbyPin = 27; // Pin para STBY (Standby)
@@ -28,7 +28,7 @@ const int maxDutyCycle = 255; // Máximo ciclo de trabajo (velocidad máxima)
 const float SOUND_SPEED = 34300; // Velocidad del sonido en cm/s
 const int MAX_DISTANCE = 400;    // Máxima distancia que se puede medir en cm
 
-const int pwmPinBomba = 5;  // Pin para PWMA o PWMB
+const int pwmPinBomba = 26;  // Pin para PWMA o PWMB
 const int in1PinBomba = 18; // Pin para AIN1 o BIN1
 const int in2PinBomba = 19; // Pin para AIN2 o BIN2 */
 
@@ -63,7 +63,8 @@ void setBomba(bool forward2, int speed2)
     digitalWrite(in1PinBomba, LOW);
     digitalWrite(in2PinBomba, HIGH);
   }
-  ledcWrite(pwmChannelBomba, speed2);
+  dacWrite(pwmPinBomba, speed2);
+  //ledcWrite(pwmChannelBomba, speed2);
 }
 
 // Función para leer distancia del sensor ultrasónico
@@ -104,11 +105,9 @@ void setup()
   // Configuración del PWM
   ledcSetup(pwmChannel, freq, resolution);
   ledcAttachPin(pwmPin, pwmChannel);
-  ledcAttachPin(pwmPinBomba, pwmChannelBomba);
-
+  pinMode(pwmPinBomba, OUTPUT);
   // Activar el controlador
   digitalWrite(stbyPin, HIGH);
-
   // Apagar el motor al inicio
   setMotor(true, 0);
 }
@@ -123,7 +122,7 @@ void loop()
     if (distance1 <= 6) // Activar motor si la distancia es menor a 6 cm
     {
       Serial.println("Objeto detectado en Sensor 1. Activando motor...");
-      setMotor(true, 100); // Motor adelante a máxima velocidad
+      setMotor(true, 180); // Motor adelante a máxima velocidad
       break;
     }
     delay(100);
@@ -147,14 +146,14 @@ void loop()
     }
     delay(100);
   }
-
-  setBomba(true, 100);
+  Serial.println("Encendiendo bomba...");
+  setBomba(true, 130);
   delay(5000); // Pausa antes de reiniciar el ciclo
   setBomba(true, 0);
+  Serial.println("Apagnado bomba...");
   delay(500); // Pausa antes de reiniciar el ciclo
+  setMotor(true, 180);
 
-  setMotor(true, 100);
-  delay(500);
 
   while (true)
   {
